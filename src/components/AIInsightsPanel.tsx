@@ -1,69 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Portfolio } from '../lib/data';
-import { AIInsights, generateAIInsights } from '../lib/ai';
 import { Sparkles, AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 
-export function AIInsightsPanel({ portfolio }: { portfolio: Portfolio }) {
-  const [insights, setInsights] = useState<AIInsights | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export interface AIInsights {
+  executiveSummary: string;
+  keyRisks: string[];
+  waveRationale: { wave: number; rationale: string }[];
+  recommendedActions: string[];
+  confidenceScore: number;
+  estimatedDuration: string;
+}
+
+export function AIInsightsPanel({ insights }: { insights: AIInsights }) {
   const [expandedWave, setExpandedWave] = useState<number | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    
-    async function fetchInsights() {
-      setLoading(true);
-      setError(null);
-      try {
-        const result = await generateAIInsights(portfolio);
-        if (isMounted) {
-          setInsights(result);
-          setLoading(false);
-        }
-      } catch (err: any) {
-        if (isMounted) {
-          setError(err.message || "Failed to load AI insights.");
-          setLoading(false);
-        }
-      }
-    }
-
-    fetchInsights();
-    
-    return () => { isMounted = false; };
-  }, [portfolio]);
-
-  if (loading) {
-    return (
-      <div className="animate-pulse space-y-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="h-5 w-5 text-blue-400" />
-          <h3 className="text-lg font-semibold text-gray-900">Generating AI Insights...</h3>
-        </div>
-        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <div className="h-24 bg-gray-100 rounded-lg"></div>
-          <div className="h-24 bg-gray-100 rounded-lg"></div>
-          <div className="h-24 bg-gray-100 rounded-lg"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 flex items-start gap-3">
-        <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
-        <div>
-          <h4 className="font-semibold">AI Analysis Failed</h4>
-          <p className="text-sm mt-1">{error}</p>
-        </div>
-      </div>
-    );
-  }
 
   if (!insights) return null;
 

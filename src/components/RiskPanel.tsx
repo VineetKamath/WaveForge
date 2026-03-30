@@ -7,15 +7,28 @@ export function RiskPanel({ services }: { services: Service[] }) {
     .sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0))
     .slice(0, 8);
 
+  const highRiskCount = services.filter(s => s.criticality === 'Critical' || s.criticality === 'High').length;
+  const mediumRiskCount = services.filter(s => s.criticality === 'Medium').length;
+
   return (
     <div className="space-y-4">
+      <div className="flex gap-4 mb-4 text-sm">
+        <div className="flex flex-col">
+          <span className="text-gray-500 text-xs uppercase tracking-wider">High Risk</span>
+          <span className="text-red-600 font-bold text-lg">{highRiskCount}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-gray-500 text-xs uppercase tracking-wider">Medium Risk</span>
+          <span className="text-orange-500 font-bold text-lg">{mediumRiskCount}</span>
+        </div>
+      </div>
       {topRisks.map((service, idx) => (
         <motion.div 
           key={service.id}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: idx * 0.1 }}
-          className={`p-3 rounded-lg border bg-gray-50 flex items-center justify-between ${(service.riskScore || 0) >= 60 ? 'border-l-4 border-l-red-500 animate-pulse-border' : 'border-gray-200'}`}
+          className={`p-3 rounded-lg border bg-gray-50 flex items-center justify-between ${(service.riskScore || 0) >= 12 ? 'border-l-4 border-l-red-500 animate-pulse-border' : 'border-gray-200'}`}
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -27,8 +40,8 @@ export function RiskPanel({ services }: { services: Service[] }) {
             <div className="flex items-center gap-2">
               <div className="w-full bg-gray-200 rounded-full h-1.5 max-w-[100px]">
                 <div 
-                  className={`h-1.5 rounded-full ${(service.riskScore || 0) >= 60 ? 'bg-red-500' : (service.riskScore || 0) >= 40 ? 'bg-orange-500' : 'bg-blue-500'}`} 
-                  style={{ width: `${service.riskScore}%` }}
+                  className={`h-1.5 rounded-full ${(service.riskScore || 0) >= 12 ? 'bg-red-500' : (service.riskScore || 0) >= 8 ? 'bg-orange-500' : 'bg-blue-500'}`} 
+                  style={{ width: `${Math.min(100, (service.riskScore || 0) * 5)}%` }}
                 ></div>
               </div>
               <span className="text-xs text-gray-500">{service.riskScore}</span>

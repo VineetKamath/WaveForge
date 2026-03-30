@@ -1,87 +1,57 @@
 import { Portfolio, Service, Strategy } from './data';
+import { AIInsights } from '../components/AIInsightsPanel';
 
 export interface AnalysisResult {
   portfolio: Portfolio;
   waves: number;
   violations: { sourceId: string; targetId: string }[];
+  aiInsights: AIInsights;
 }
 
-export function analyzePortfolio(portfolio: Portfolio): AnalysisResult {
-  const services = [...portfolio.services];
+export async function analyzePortfolio(portfolio: Portfolio): Promise<any> {
+  const mappedPortfolio = {
+    ...portfolio,
+    services: portfolio.services.map(s => ({
+      id: s.id,
+      name: s.name,
+      type: s.type,
+      criticality: s.criticality.toLowerCase(),
+      dependencies: s.dependencies,
+      uptimeSLA: s.uptime
+    }))
+  };
+
+  const response = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ portfolio: mappedPortfolio })
+  });
   
-  // 1. Calculate dependents
-  services.forEach(s => {
-    s.dependents = services.filter(other => other.dependencies.includes(s.id)).map(other => other.id);
-  });
-
-  // 2. Calculate Risk Score
-  services.forEach(s => {
-    let score = 0;
-    switch (s.criticality) {
-      case 'Critical': score += 60; break;
-      case 'High': score += 40; break;
-      case 'Medium': score += 20; break;
-      case 'Low': score += 10; break;
-    }
-    score += (s.dependents?.length || 0) * 5;
-    if (s.uptime < 95) score += 20;
-    else if (s.uptime < 99) score += 10;
-    else if (s.uptime < 99.9) score += 5;
-    
-    s.riskScore = Math.min(100, score);
-  });
-
-  // 3. Determine Strategy (Simple rule-based for mock)
-  services.forEach(s => {
-    if (s.type === 'Database') s.strategy = 'Replatform';
-    else if (s.type === 'Legacy App' || s.type === 'Application') s.strategy = 'Refactor';
-    else if (s.type === 'API' || s.type === 'Microservice' || s.type === 'Backend') s.strategy = 'Rehost';
-    else if (s.type === 'Frontend' || s.type === 'Media') s.strategy = 'Replatform';
-    else s.strategy = 'Retain';
-  });
-
-  // 4. Wave Planning (Topological Sort)
-  let currentWave = 1;
-  let remaining = [...services];
-  
-  // Reset waves
-  services.forEach(s => s.wave = undefined);
-
-  while (remaining.length > 0) {
-    // Find services whose dependencies are already assigned to PREVIOUS waves
-    const ready = remaining.filter(s => {
-      // If no dependencies, it's ready
-      if (s.dependencies.length === 0) return true;
-      
-      // Check if all dependencies are in a wave strictly less than currentWave
-      return s.dependencies.every(depId => {
-        const depService = services.find(x => x.id === depId);
-        return depService && depService.wave !== undefined && depService.wave < currentWave;
-      });
-    });
-
-    if (ready.length === 0) {
-      // Cycle detected or unresolvable dependencies. Break cycle arbitrarily.
-      console.warn("Cycle detected or unresolvable dependencies in wave planning.");
-      // Just take the first remaining one and force it into the current wave
-      ready.push(remaining[0]);
-    }
-
-    ready.forEach(s => {
-      const actualService = services.find(x => x.id === s.id)!;
-      actualService.wave = currentWave;
-    });
-
-    remaining = remaining.filter(s => !ready.find(r => r.id === s.id));
-    currentWave++;
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData.error || 'Failed to analyze portfolio');
   }
+  
+  const data = await response.json();
+  
+  // Map backend data back to frontend structure
+  const services = portfolio.services.map(s => {
+    return {
+      ...s,
+      riskScore: data.riskScores[s.id],
+      strategy: data.strategies[s.id],
+      wave: data.waves.find((w: any) => w.services.some((ws: any) => ws.id === s.id))?.id || 1,
+      dependents: portfolio.services.filter(other => other.dependencies.includes(s.id)).map(other => other.id)
+    };
+  });
 
-  const maxWave = Math.max(...services.map(s => s.wave || 1));
+  const maxWave = Math.max(...services.map(s => s.wave), 1);
 
   return {
     portfolio: { ...portfolio, services },
     waves: maxWave,
-    violations: checkViolations(services)
+    violations: checkViolations(services),
+    aiInsights: data.aiInsights
   };
 }
 

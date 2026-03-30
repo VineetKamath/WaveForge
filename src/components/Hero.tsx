@@ -2,9 +2,13 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, Activity, ShieldAlert, Cpu } from 'lucide-react';
 
-export function Hero() {
+interface Props {
+  onDemo: () => void;
+}
+
+export function Hero({ onDemo }: Props) {
   return (
-    <div className="relative overflow-hidden bg-gray-50 pt-16 pb-32 sm:pt-24 sm:pb-40 lg:pb-48">
+    <div id="overview" className="relative overflow-hidden bg-gray-50 pt-16 pb-32 sm:pt-24 sm:pb-40 lg:pb-48">
       <div className="absolute inset-0 z-0">
         <svg className="absolute left-[max(50%,25rem)] top-0 h-[64rem] w-[128rem] -translate-x-1/2 stroke-gray-200 [mask-image:radial-gradient(64rem_64rem_at_top,white,transparent)]" aria-hidden="true">
           <defs>
@@ -43,9 +47,9 @@ export function Hero() {
             <a href="#analyze" className="rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 flex items-center">
               Start Analysis <ArrowRight className="ml-2 h-4 w-4" />
             </a>
-            <a href="#overview" className="text-sm font-semibold leading-6 text-gray-900">
-              Learn more <span aria-hidden="true">→</span>
-            </a>
+            <button onClick={onDemo} className="text-sm font-semibold leading-6 text-gray-900 hover:text-blue-600 transition-colors">
+              See a Live Demo <span aria-hidden="true">→</span>
+            </button>
           </motion.div>
         </div>
 
@@ -84,6 +88,67 @@ export function Hero() {
               <dd className="mt-2 text-base leading-7 text-gray-600">Generate executive summaries and actionable recommendations using Gemini AI.</dd>
             </div>
           </dl>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.5 }}
+          className="mt-32 sm:mt-40 xl:mx-auto xl:max-w-7xl xl:px-8"
+        >
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+              <div className="p-8 lg:p-12 flex flex-col justify-center">
+                <h2 className="text-3xl font-bold tracking-tight text-gray-900">How WaveForge Works</h2>
+                <p className="mt-4 text-lg text-gray-600">
+                  Our platform simplifies complex cloud migrations into a manageable, step-by-step process.
+                </p>
+                <ol className="mt-8 space-y-6 text-gray-600">
+                  <li className="flex gap-x-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold">1</span>
+                    <span><strong className="font-semibold text-gray-900">Load Portfolio:</strong> Import your existing application landscape via JSON or use our industry templates.</span>
+                  </li>
+                  <li className="flex gap-x-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold">2</span>
+                    <span><strong className="font-semibold text-gray-900">AI Analysis:</strong> Our engine analyzes dependencies, calculates risk scores, and determines the optimal migration strategy (6 Rs).</span>
+                  </li>
+                  <li className="flex gap-x-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold">3</span>
+                    <span><strong className="font-semibold text-gray-900">Simulate & Refine:</strong> Use the interactive Wave Timeline to drag and drop services, instantly seeing the impact on dependencies.</span>
+                  </li>
+                  <li className="flex gap-x-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold">4</span>
+                    <span><strong className="font-semibold text-gray-900">Export Plan:</strong> Generate a comprehensive, boardroom-ready PDF migration plan with step-by-step playbooks.</span>
+                  </li>
+                </ol>
+              </div>
+              <div className="bg-gray-50 p-8 lg:p-12 border-t lg:border-t-0 lg:border-l border-gray-200 flex items-center justify-center">
+                <div className="w-full max-w-md space-y-4">
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">✓</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Zero Downtime Planning</h4>
+                      <p className="text-sm text-gray-500">Dependency-aware wave generation</p>
+                    </div>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">AI</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Gemini-Powered Insights</h4>
+                      <p className="text-sm text-gray-500">Automated risk mitigation strategies</p>
+                    </div>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold">☁️</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Multi-Cloud Ready</h4>
+                      <p className="text-sm text-gray-500">AWS, Azure, and GCP recommendations</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>

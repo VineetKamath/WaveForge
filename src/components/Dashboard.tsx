@@ -6,6 +6,8 @@ import { DependencyGraph } from './DependencyGraph';
 import { WaveTimeline } from './WaveTimeline';
 import { RiskPanel } from './RiskPanel';
 import { AIInsightsPanel } from './AIInsightsPanel';
+import { CloudAdvisorPanel } from './CloudAdvisorPanel';
+import { MetricsOverview } from './MetricsOverview';
 import { toast } from 'sonner';
 
 interface Props {
@@ -45,14 +47,45 @@ export function Dashboard({ portfolio, result, setResult, onReset }: Props) {
     }
   };
 
-  const handleReanalyze = () => {
-    const freshResult = analyzePortfolio(result?.portfolio || portfolio);
-    setResult(freshResult);
-    setIsSimulating(false);
-    toast.success("Portfolio re-analyzed and optimized.");
+  const handleReanalyze = async () => {
+    try {
+      const freshResult = await analyzePortfolio(result?.portfolio || portfolio);
+      setResult(freshResult);
+      setIsSimulating(false);
+      toast.success("Portfolio re-analyzed and optimized.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to re-analyze");
+    }
   };
 
-  if (!result) return <div className="p-12 text-center">Analyzing...</div>;
+  if (!result) {
+    return (
+      <div className="bg-gray-50 min-h-screen pb-24" id="dashboard">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Analysis Dashboard</h2>
+              <p className="text-sm text-gray-500">Portfolio: {portfolio.name}</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8 h-[500px] animate-pulse flex items-center justify-center">
+            <div className="text-gray-400 font-medium">Analyzing dependencies...</div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse h-64 flex items-center justify-center">
+              <div className="text-gray-400 font-medium">Planning waves...</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse h-64 flex items-center justify-center">
+              <div className="text-gray-400 font-medium">Calculating risks...</div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse h-64 flex items-center justify-center">
+            <div className="text-gray-400 font-medium">Generating AI Insights...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen pb-24" id="dashboard">
@@ -82,6 +115,7 @@ export function Dashboard({ portfolio, result, setResult, onReset }: Props) {
 
         {/* Panel A: Dependency Graph */}
         <div 
+          id="dependency-graph"
           className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8 h-[500px] relative overflow-hidden"
           onClick={() => setHighlightedService(null)}
         >
@@ -93,9 +127,14 @@ export function Dashboard({ portfolio, result, setResult, onReset }: Props) {
           />
         </div>
 
+        {/* Panel A.5: Metrics Overview */}
+        <div className="mb-8">
+          <MetricsOverview services={result.portfolio.services} />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* Panel B: Wave Timeline */}
-          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div id="simulate" className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold mb-4">Wave Timeline (Simulator)</h3>
             <p className="text-sm text-gray-500 mb-6">Drag services between waves to simulate changes.</p>
             <WaveTimeline 
@@ -114,8 +153,13 @@ export function Dashboard({ portfolio, result, setResult, onReset }: Props) {
         </div>
 
         {/* Panel D: AI Insights */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+          <AIInsightsPanel insights={result.aiInsights} />
+        </div>
+
+        {/* Panel E: Cloud Strategy Advisor */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <AIInsightsPanel portfolio={result.portfolio} />
+          <CloudAdvisorPanel services={result.portfolio.services} />
         </div>
       </div>
     </div>

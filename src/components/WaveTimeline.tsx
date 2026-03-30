@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Service } from '../lib/data';
-import { DndContext, closestCenter, DragEndEvent, useDroppable, useDraggable } from '@dnd-kit/core';
+import { 
+  DndContext, 
+  closestCenter, 
+  DragEndEvent, 
+  useDroppable, 
+  useDraggable,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  KeyboardSensor
+} from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import { MigrationPlaybook } from './MigrationPlaybook';
 
 interface Props {
   services: Service[];
@@ -12,6 +23,17 @@ interface Props {
 }
 
 export function WaveTimeline({ services, waves, onMoveService, onHoverService }: Props) {
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // 5px movement required before drag starts, allows clicks to pass through
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over) return;
@@ -28,31 +50,66 @@ export function WaveTimeline({ services, waves, onMoveService, onHoverService }:
     }
   };
 
+  const handleServiceClick = (serviceId: string) => {
+    const service = services.find(s => s.id === serviceId);
+    if (service) {
+      setSelectedService(service);
+      onHoverService(serviceId);
+    }
+  };
+
   const waveArray = Array.from({ length: waves }, (_, i) => i + 1);
 
   return (
-    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <div className="space-y-4">
-        {waveArray.map(waveNum => (
-          <WaveRow 
-            key={waveNum} 
-            waveNum={waveNum} 
-            services={services.filter(s => s.wave === waveNum)} 
-            onHoverService={onHoverService}
-          />
-        ))}
-      </div>
-    </DndContext>
+    <div>
+      <DndContext 
+        sensors={sensors}
+        collisionDetection={closestCenter} 
+        onDragEnd={handleDragEnd}
+      >
+        <div className="space-y-4">
+          {waveArray.map(waveNum => (
+            <WaveRow 
+              key={waveNum} 
+              waveNum={waveNum} 
+              services={services.filter(s => s.wave === waveNum)} 
+              onServiceClick={handleServiceClick}
+            />
+          ))}
+        </div>
+      </DndContext>
+
+      {selectedService && (
+        <MigrationPlaybook 
+          service={selectedService} 
+          onClose={() => setSelectedService(null)} 
+        />
+      )}
+    </div>
   );
 }
 
-interface WaveRowProps { key?: React.Key; waveNum: number; services: Service[]; onHoverService: (id: string | null) => void; }
-function WaveRow({ waveNum, services, onHoverService }: WaveRowProps) {
+interface WaveRowProps { key?: React.Key; waveNum: number; services: Service[]; onServiceClick: (id: string) => void; }
+function WaveRow({ waveNum, services, onServiceClick }: WaveRowProps) {
   const { setNodeRef, isOver } = useDroppable({ id: `wave-${waveNum}` });
+
+  const criticalCount = services.filter(s => s.criticality === 'Critical').length;
+  const highCount = services.filter(s => s.criticality === 'High').length;
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-      <div className="w-24 shrink-0 font-medium text-gray-700">Wave {waveNum}</div>
+      <div className="w-32 shrink-0">
+        <div className="font-medium text-gray-900">Wave {waveNum}</div>
+        <div className="text-xs text-gray-500 mt-1">
+          {services.length} services
+          {(criticalCount > 0 || highCount > 0) && (
+            <div className="mt-1 flex gap-1">
+              {criticalCount > 0 && <span className="text-red-600 font-medium">{criticalCount} Crit</span>}
+              {highCount > 0 && <span className="text-orange-600 font-medium">{highCount} High</span>}
+            </div>
+          )}
+        </div>
+      </div>
       <motion.div 
         initial={{ width: 0, opacity: 0 }}
         animate={{ width: '100%', opacity: 1 }}
@@ -61,7 +118,7 @@ function WaveRow({ waveNum, services, onHoverService }: WaveRowProps) {
         ref={setNodeRef}
       >
         {services.map(service => (
-          <ServiceChip key={service.id} service={service} onHoverService={onHoverService} />
+          <ServiceChip key={service.id} service={service} onServiceClick={onServiceClick} />
         ))}
         {services.length === 0 && <span className="text-gray-400 text-sm italic py-1">Drop services here</span>}
       </motion.div>
@@ -69,8 +126,8 @@ function WaveRow({ waveNum, services, onHoverService }: WaveRowProps) {
   );
 }
 
-interface ServiceChipProps { key?: React.Key; service: Service; onHoverService: (id: string | null) => void; }
-function ServiceChip({ service, onHoverService }: ServiceChipProps) {
+interface ServiceChipProps { key?: React.Key; service: Service; onServiceClick: (id: string) => void; }
+function ServiceChip({ service, onServiceClick }: ServiceChipProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: service.id });
 
   const style = transform ? {
@@ -89,12 +146,7 @@ function ServiceChip({ service, onHoverService }: ServiceChipProps) {
       style={style}
       {...attributes}
       {...listeners}
-      onPointerDown={(e) => {
-        // Prevent drag from immediately clearing if we just want to highlight
-        // Actually, dnd-kit handles pointer events, so we might need to be careful.
-        // Let's just use onClick or onPointerDown.
-        onHoverService(service.id);
-      }}
+      onClick={() => onServiceClick(service.id)}
       className={`px-3 py-1.5 rounded-md text-xs font-medium border cursor-grab active:cursor-grabbing shadow-sm ${bgColor} ${isDragging ? 'opacity-50 ring-2 ring-blue-500' : ''}`}
       title={`${service.name} (${service.strategy})`}
     >
